@@ -128,12 +128,24 @@ const resp = await client.chat.completions.create({
     {
       role: "user",
       content: [
-        ...imageBlocks,
-        { type: "text", text: prompt },
+        ...imageBlocks.map((block) => ({
+          type: "image_url" as const,
+          image_url: {
+            url: block.image_url.url,
+          },
+        })),
+        {
+          type: "text" as const,
+          text: prompt,
+        },
       ],
     },
   ],
 });
+
+const text = resp.choices?.[0]?.message?.content ?? "";
+
+const filled = parseModelJson<Record<string, unknown>>(text);
 
 const text = resp.choices?.[0]?.message?.content ?? "";
 

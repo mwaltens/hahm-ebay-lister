@@ -5,7 +5,7 @@ import { isAllowedModel } from "@/lib/models";
 const SORT_DEFAULT = "gpt-5.4-mini";
 const ANALYSIS_DEFAULT = "gpt-5.4";
 
-interface ModelOption {
+export interface ModelOption {
   id: string;
   displayName: string;
   description: string;

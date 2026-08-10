@@ -121,19 +121,23 @@ Return ONLY valid JSON mapping aspect name to value (string, or array for multi-
 
   try {
     const client = getClient();
-    const resp = await client.messages.create({
-      model: FILL_MODEL,
-      max_tokens: 1500,
-      messages: [
-        {
-          role: "user",
-          content: [...imageBlocks, { type: "text", text: prompt }],
-        },
+const resp = await client.chat.completions.create({
+  model: FILL_MODEL,
+  max_tokens: 1500,
+  messages: [
+    {
+      role: "user",
+      content: [
+        ...imageBlocks,
+        { type: "text", text: prompt },
       ],
-    });
-    const block = resp.content.find((b) => b.type === "text");
-    const text = block && block.type === "text" ? block.text : "";
-    const filled = parseModelJson<Record<string, unknown>>(text);
+    },
+  ],
+});
+
+const text = resp.choices?.[0]?.message?.content ?? "";
+
+const filled = parseModelJson<Record<string, unknown>>(text);
 
     const byLower = new Map(unfilled.map((a) => [a.name.toLowerCase(), a]));
     let added = 0;

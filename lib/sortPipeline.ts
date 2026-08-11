@@ -59,6 +59,14 @@ function firstText(resp: { content: Array<{ type: string; text?: string }> }): s
   const block = resp.content.find((b) => b.type === "text");
   return block?.type === "text" ? (block.text ?? "").trim() : "";
 }
+function slugifyFolderName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || "item";
+}
 
 // Run an async fn over items with a fixed concurrency cap, preserving order.
 async function mapLimit<T, R>(

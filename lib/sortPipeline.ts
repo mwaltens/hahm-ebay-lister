@@ -103,9 +103,8 @@ async function claudeJson<T>(
           model,
           max_tokens: maxTokens,
           messages: [{ role: "user", content }],
-        },
-        { timeout: Math.min(PER_CALL_TIMEOUT_MS, remaining), maxRetries: 0 }
-      );
+              }
+    );
       return parseModelJson<T>(firstText(resp));
     } catch (e) {
       const status =

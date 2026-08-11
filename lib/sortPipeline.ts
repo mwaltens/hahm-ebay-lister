@@ -166,9 +166,9 @@ async function groupPhotos(
     ? `These are photos ${b.labelStart}-${b.labelEnd} of ${total} total. Group only the photos shown above.`
     : "";
 
-const content: Array<{ type: string; text: string }> = [
+const content = [
   {
-    type: "text",
+    type: "text" as const,
     text: buildSortPrompt(b.batch.length, b.labelStart, b.labelEnd, note),
   },
 ];

@@ -32,9 +32,20 @@ export function getClient() {
   const openai = getOpenAIClient();
 
 return {
-  models: {
-    list: async () => openai.models.list(),
+models: {
+  list: async () => {
+    const page = await openai.models.list();
+
+    return {
+      data: page.data.map((model) => ({
+        id: model.id,
+        created_at: new Date(model.created * 1000).toISOString(),
+        display_name: model.id,
+        type: "model" as const,
+      })),
+    };
   },
+},
   messages: {
       async create(params: {
         model: string;

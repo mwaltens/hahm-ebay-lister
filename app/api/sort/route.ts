@@ -51,7 +51,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await sortPhotos(client, images, sortModel);
+    const result = await sortPhotos({
+        client,
+        images,
+        model: sortModel,
+    });
     if (result.groups.length === 0) {
       return NextResponse.json(
         {

@@ -31,8 +31,11 @@ export function getOpenAIClient(): OpenAI {
 export function getClient() {
   const openai = getOpenAIClient();
 
-  return {
-    messages: {
+return {
+  models: {
+    list: async () => openai.models.list(),
+  },
+  messages: {
       async create(params: {
         model: string;
         max_tokens?: number;

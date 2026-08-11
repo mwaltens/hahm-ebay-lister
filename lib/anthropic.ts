@@ -1,42 +1,118 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-let client: Anthropic | null = null;
+let client: OpenAI | null = null;
 
-export function getClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+export function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+
   if (!apiKey) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it in Vercel → Settings → Environment Variables (or in .env.local for local dev)."
+      "OPENAI_API_KEY is not set. Add it in Vercel → Settings → Environment Variables."
     );
   }
+
   if (!client) {
-    client = new Anthropic({ apiKey });
+    client = new OpenAI({ apiKey });
   }
+
   return client;
 }
 
-// Mirrors _load_model_json() in the Python script: strip code fences, then fall
-// back to grabbing the outermost {...} block.
+/**
+ * Compatibility wrapper.
+ *
+ * Existing HAHM code expects:
+ *
+ *   getClient().messages.create(...)
+ *
+ * We keep that interface temporarily so we do NOT have to rewrite
+ * every file in the application at once.
+ */
+export function getClient() {
+  const openai = getOpenAIClient();
+
+  return {
+    messages: {
+      async create(params: {
+        model: string;
+        max_tokens?: number;
+        messages: Array<{
+          role: "user" | "assistant" | "system";
+          content: string | unknown[];
+        }>;
+      }) {
+        const model =
+          process.env.OPENAI_MODEL ||
+          "gpt-5.5";
+
+        const messages = params.messages.map((message) => ({
+          role: message.role,
+          content:
+            typeof message.content === "string"
+              ? message.content
+              : JSON.stringify(message.content),
+        }));
+
+        const response = await openai.chat.completions.create({
+          model,
+          max_tokens: params.max_tokens ?? 1500,
+          messages,
+        });
+
+        const text = response.choices[0]?.message?.content ?? "";
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text,
+            },
+          ],
+        };
+      },
+    },
+  };
+}
+
+/**
+ * Parse JSON returned by the model.
+ *
+ * Handles normal JSON as well as JSON wrapped in markdown fences.
+ */
 export function parseModelJson<T = unknown>(raw: string): T {
-  let text = (raw || "").trim();
-  text = text.replace(/^```(?:json)?\s*/gm, "").replace(/\s*```$/gm, "");
+  let text = raw.trim();
+
+  text = text
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
   try {
     return JSON.parse(text) as T;
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+
     if (match) {
-      return JSON.parse(match[0]) as T;
+      try {
+        return JSON.parse(match[0]) as T;
+      } catch {
+        // Continue to the final error.
+      }
     }
+
     throw new Error("Model did not return valid JSON.");
   }
 }
 
-// ── Account-level Anthropic failures ─────────────────────────────────────────
-// A bad/missing key, missing model access, or exhausted credits makes EVERY
-// call fail, so retrying or degrading is pointless — it just surfaces a vague
-// error. Detect these and throw a typed error so routes can show the real cause.
+/**
+ * Compatibility error class.
+ *
+ * Existing routes may import this name, so keep it for now.
+ */
 export class AnthropicAuthError extends Error {
   status: number;
+
   constructor(message: string, status: number) {
     super(message);
     this.name = "AnthropicAuthError";
@@ -44,29 +120,55 @@ export class AnthropicAuthError extends Error {
   }
 }
 
-export function anthropicAuthError(e: unknown): AnthropicAuthError | null {
+/**
+ * Convert API errors into the error type expected by
+ * the existing application.
+ */
+export function anthropicAuthError(
+  error: unknown
+): AnthropicAuthError | null {
   const status =
-    e && typeof e === "object" && "status" in e
-      ? Number((e as { status?: number }).status)
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof (error as { status?: unknown }).status === "number"
+      ? (error as { status: number }).status
       : undefined;
+
   const message =
-    e && typeof e === "object" && "message" in e
-      ? String((e as { message?: unknown }).message ?? "")
-      : "";
-  if (status === 401)
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+      ? (error as { message: string }).message
+      : error instanceof Error
+        ? error.message
+        : "";
+
+  if (status === 401) {
     return new AnthropicAuthError(
-      "Anthropic rejected your API key (401). Check that ANTHROPIC_API_KEY is set correctly in your environment variables.",
+      "OpenAI API key was rejected (401). Check OPENAI_API_KEY in your environment variables.",
       401
     );
-  if (status === 403)
+  }
+
+  if (status === 403) {
     return new AnthropicAuthError(
-      "Your Anthropic API key isn't permitted to use this model (403). Check the key's access in the Anthropic Console.",
+      "OpenAI API access was denied (403). Check the API key and project permissions.",
       403
     );
-  if (status === 402 || /credit balance|too low|billing|payment|insufficient|quota/i.test(message))
+  }
+
+  if (
+    status === 402 ||
+    status === 429 ||
+    /billing|quota|insufficient/i.test(message)
+  ) {
     return new AnthropicAuthError(
-      "Your Anthropic account can't cover this request — add credits/billing in the Anthropic Console, then try again.",
-      402
+      "OpenAI API request was rejected because of billing, quota, or rate limits.",
+      status ?? 429
     );
+  }
+
   return null;
 }

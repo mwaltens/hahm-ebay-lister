@@ -150,11 +150,12 @@ async function groupPhotos(
   }
 
   const perBatch = await mapLimit(batches, GROUP_CONCURRENCY, async (b) => {
-    const content: Array<{ type: string; text?: string; [key: string]: unknown }> = [
-    const note =
-      b.offset > 0
-        ? ` (These are photos ${b.labelStart}–${b.labelEnd} of ${total} total. Group only the photos shown above.)`
-        : "";
+  const note =
+  b.offset > 0
+    ? `These are photos ${b.labelStart}-${b.labelEnd} of ${total} total. Group only the photos shown above.`
+    : "";
+
+const content: Array<{ type: string; text: string }> = [   
     content.push({
       type: "text",
       text: buildSortPrompt(b.batch.length, b.labelStart, b.labelEnd, note),

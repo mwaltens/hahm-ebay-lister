@@ -1,10 +1,13 @@
-import type Anthropic from "@anthropic-ai/sdk";
-import { anthropicAuthError, parseModelJson } from "@/lib/anthropic";
+import {
+  getClient,
+  anthropicAuthError,
+  parseModelJson,
+} from "@/lib/anthropic";
 import {
   buildSortPrompt,
   buildVerifyGroupPrompt,
   buildVerifyMergePrompt,
-  slugifyFolderName,
+  buildVerifyFolderNamePrompt,
 } from "@/lib/prompts";
 import { labeledContent, toImageBlock, type WireImage } from "@/lib/images";
 
@@ -82,7 +85,7 @@ async function mapLimit<T, R>(
 // it. SDK-internal retries are disabled — this loop is the only retry layer, so
 // time spent is predictable.
 async function claudeJson<T>(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   model: string,
   content: Anthropic.ContentBlockParam[],
   maxTokens: number,
@@ -135,7 +138,7 @@ async function claudeJson<T>(
 // The merge step (step 3) reunites any item split across a batch boundary, so
 // batches don't need sequential context — letting us parallelize safely.
 async function groupPhotos(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   images: WireImage[],
   model: string,
   deadline: number
@@ -189,7 +192,7 @@ async function groupPhotos(
 // A verify that can't run (budget spent) keeps the group as sorted — a rougher
 // result beats a platform timeout that loses the whole sort.
 async function verifyGroups(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   images: WireImage[],
   groups: { name: string; indices: number[] }[],
   model: string,
@@ -228,7 +231,7 @@ async function verifyGroups(
 // Step 3 — merge adjacent groups that are really one item split in two.
 // A pair that can't be checked (budget spent) simply stays unmerged.
 async function mergeSplitGroups(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   images: WireImage[],
   groups: { name: string; indices: number[] }[],
   model: string,
@@ -292,7 +295,7 @@ function uniqueNames(groups: { name: string; indices: number[] }[]): SortGroup[]
 // across the chunk boundary gets split). Same prompt as the in-request merge
 // step, exposed for the /api/merge-check route.
 export async function checkMergePair(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   imageA: WireImage,
   imageB: WireImage,
   countA: number,
@@ -323,7 +326,7 @@ export async function checkMergePair(
 }
 
 export async function sortPhotos(
-  client: Anthropic,
+  client: ReturnType<typeof getClient>,
   images: WireImage[],
   model?: string,
   budgetMs: number = SORT_TIME_BUDGET_MS

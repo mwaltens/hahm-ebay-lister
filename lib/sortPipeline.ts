@@ -9,6 +9,7 @@ import {
   buildVerifyMergePrompt,
 } from "@/lib/prompts";
 import { labeledContent, toImageBlock, type WireImage } from "@/lib/images";
+import type { ContentBlockParam } from "@anthropic-ai/sdk";
 
 const GROUP_MODEL = "claude-sonnet-4-6";
 const CHECK_MODEL = "claude-sonnet-4-6";
@@ -94,7 +95,7 @@ async function mapLimit<T, R>(
 async function claudeJson<T>(
   client: ReturnType<typeof getClient>,
   model: string,
-  content: Array<{ type: string; text?: string; [key: string]: unknown }>,
+  content: ContentBlockParam[],
   maxTokens: number,
   label: string,
   deadline: number

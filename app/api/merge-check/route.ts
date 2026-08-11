@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
             {
               type: "input_image",
               image_url: getImageUrl(body.imageA),
+              detail: "high",
             },
 
             {
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
             {
               type: "input_image",
               image_url: getImageUrl(body.imageB),
+              detail: "high",
             },
           ],
         },

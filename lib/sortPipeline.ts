@@ -251,7 +251,7 @@ function toOpenAIImageInput(
   return {
     type: "input_image",
     image_url: imageUrl,
-    detail: "auto",
+    detail: "auto" as const,
   };
 }
 

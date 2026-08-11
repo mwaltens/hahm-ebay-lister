@@ -155,11 +155,12 @@ async function groupPhotos(
     ? `These are photos ${b.labelStart}-${b.labelEnd} of ${total} total. Group only the photos shown above.`
     : "";
 
-const content: Array<{ type: string; text: string }> = [   
-    content.push({
-      type: "text",
-      text: buildSortPrompt(b.batch.length, b.labelStart, b.labelEnd, note),
-    });
+const content: Array<{ type: string; text: string }> = [
+  {
+    type: "text",
+    text: buildSortPrompt(b.batch.length, b.labelStart, b.labelEnd, note),
+  },
+];
     const data = await claudeJson<{
       groups?: { folder_name?: string; photo_indices?: number[] }[];
     }>(client, model, content, 2000, `group ${b.labelStart}-${b.labelEnd}`, deadline);

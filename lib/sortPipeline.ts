@@ -57,7 +57,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function firstText(resp: { content: Array<{ type: string; text?: string }> }): string {
   const block = resp.content.find((b) => b.type === "text");
-  return block && block.type === "text" ? block.text.trim() : "";
+  return block.type === "text" ? (block.text ?? "").trim() : "";
 }
 
 // Run an async fn over items with a fixed concurrency cap, preserving order.

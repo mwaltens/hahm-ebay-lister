@@ -55,7 +55,7 @@ export class SortUnavailableError extends Error {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function firstText(resp: Anthropic.Message): string {
+function firstText(resp: { content: Array<{ type: string; text?: string }> }): string {
   const block = resp.content.find((b) => b.type === "text");
   return block && block.type === "text" ? block.text.trim() : "";
 }
@@ -86,7 +86,7 @@ async function mapLimit<T, R>(
 async function claudeJson<T>(
   client: ReturnType<typeof getClient>,
   model: string,
-  content: Anthropic.ContentBlockParam[],
+  content: Array<{ type: string; text?: string; [key: string]: unknown }>,
   maxTokens: number,
   label: string,
   deadline: number
@@ -150,7 +150,7 @@ async function groupPhotos(
   }
 
   const perBatch = await mapLimit(batches, GROUP_CONCURRENCY, async (b) => {
-    const content: Anthropic.ContentBlockParam[] = [...labeledContent(b.batch, b.labelStart)];
+    const content: Array<{ type: string; text?: string; [key: string]: unknown }> = [
     const note =
       b.offset > 0
         ? ` (These are photos ${b.labelStart}–${b.labelEnd} of ${total} total. Group only the photos shown above.)`
@@ -244,7 +244,7 @@ async function mergeSplitGroups(
     const aBlock = toImageBlock(images[group.indices[0]]);
     const bBlock = toImageBlock(images[next.indices[0]]);
     if (!aBlock || !bBlock) return false;
-    const content: Anthropic.ContentBlockParam[] = [
+    const content: Array<{ type: string; text?: string; [key: string]: unknown }> = [
       { type: "text", text: "Photo 1:" },
       aBlock,
       { type: "text", text: "--- Group B ---" },
@@ -304,7 +304,7 @@ export async function checkMergePair(
   const aBlock = toImageBlock(imageA);
   const bBlock = toImageBlock(imageB);
   if (!aBlock || !bBlock) return false;
-  const content: Anthropic.ContentBlockParam[] = [
+  const content: Array<{ type: string; text?: string; [key: string]: unknown }> = [
     { type: "text", text: "Photo 1:" },
     aBlock,
     { type: "text", text: "--- Group B ---" },

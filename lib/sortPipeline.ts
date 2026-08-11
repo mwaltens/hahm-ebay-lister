@@ -7,7 +7,6 @@ import {
   buildSortPrompt,
   buildVerifyGroupPrompt,
   buildVerifyMergePrompt,
-  buildVerifyFolderNamePrompt,
 } from "@/lib/prompts";
 import { labeledContent, toImageBlock, type WireImage } from "@/lib/images";
 

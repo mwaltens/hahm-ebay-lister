@@ -7,8 +7,8 @@
 //                  sort payload tiny avoids Vercel's 4.5 MB request-body limit
 //                  when a whole batch is sent at once.
 
-const FULL_DIM = 1024;
-const FULL_QUALITY = 0.82;
+const FULL_DIM = 900;
+const FULL_QUALITY = 0.70;
 const THUMB_DIM = 360;
 const THUMB_QUALITY = 0.5;
 
